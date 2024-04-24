@@ -1,58 +1,68 @@
 document.addEventListener('DOMContentLoaded', function() {
-    const expenseForm = document.getElementById('expenseForm');
-    const expenseList = document.getElementById('expenseList');
+    const expenseForm = document.getElementById('expense-form');
+    const expensesList = document.getElementById('expenses-list');
 
     // Load expenses from local storage
     let expenses = JSON.parse(localStorage.getItem('expenses')) || [];
 
-    // Function to display expenses
-    function displayExpenses() {
-        expenseList.innerHTML = '';
-        expenses.forEach(function(expense, index) {
-            const div = document.createElement('div');
-            div.classList.add('expense');
-            div.innerHTML = `
-                <p>Amount: $${expense.amount}</p>
-                <p>Category: ${expense.category}</p>
-                <button class="delete" data-index="${index}">Delete</button>
-            `;
-            expenseList.appendChild(div);
-        });
-    }
+    // Render expenses
+    renderExpenses();
 
-    displayExpenses();
-
-    // Event listener for form submission
+    // Add expense
     expenseForm.addEventListener('submit', function(event) {
         event.preventDefault();
+        const expenseName = document.getElementById('expense-name').value.trim();
+        const expenseAmount = parseFloat(document.getElementById('expense-amount').value.trim());
+        const expenseCategory = document.getElementById('expense-category').value;
+
+        if (expenseName && !isNaN(expenseAmount)) {
+            const expense = {
+                id: Date.now(),
+                name: expenseName,
+                amount: expenseAmount,
+                category: expenseCategory
+            };
+            expenses.push(expense);
+            saveExpenses();
+            renderExpenses();
+            // Clear input fields
+            document.getElementById('expense-name').value = '';
+            document.getElementById('expense-amount').value = '';
+        }
+    });
+
+    // Render expenses
+    function renderExpenses() {
+        expensesList.innerHTML = '';
         
-        const amount = parseFloat(document.getElementById('amount').value);
-        const category = document.getElementById('category').value;
+        let totalAmount = 0;
+        expenses.forEach(function(expense) {
+            const li = document.createElement('li');
+            li.textContent = `${expense.name}: $${expense.amount.toFixed(2)} (${expense.category})`;
+            const deleteButton = document.createElement('button');
+            deleteButton.textContent = 'Delete';
+            deleteButton.addEventListener('click', function() {
+                deleteExpense(expense.id);
+            });
+            li.appendChild(deleteButton);
+            expensesList.appendChild(li);
 
-        if (isNaN(amount) || category === '') {
-            alert('Please enter valid amount and select a category.');
-            return;
-        }
+            totalAmount += expense.amount;
+        });
+        const totalElement = document.getElementById('totalAmount');
+        totalElement.textContent = `Total: $${totalAmount.toFixed(2)}`;
+    }
 
-        const expense = {
-            amount: amount.toFixed(2),
-            category: category
-        };
+    // Delete expense
+    function deleteExpense(id) {
+        expenses = expenses.filter(expense => expense.id !== id);
+        saveExpenses();
+        renderExpenses();
+    }
 
-        expenses.push(expense);
+    // Save expenses to local storage
+    function saveExpenses() {
         localStorage.setItem('expenses', JSON.stringify(expenses));
-        displayExpenses();
+    }
 
-        expenseForm.reset();
-    });
-
-    // Event listener for delete button click
-    expenseList.addEventListener('click', function(event) {
-        if (event.target.classList.contains('delete')) {
-            const index = event.target.dataset.index;
-            expenses.splice(index, 1);
-            localStorage.setItem('expenses', JSON.stringify(expenses));
-            displayExpenses();
-        }
-    });
 });
